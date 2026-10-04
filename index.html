@@ -1108,6 +1108,7 @@ function home(){
   +(rk.length?card(`<h2>🏆 Ranking – top 10</h2>${rankTable(rk.slice(0,10))}
   <p class="mute">Ranking jest sortowany po liczbie zdobytych punktów; obok widać maksimum możliwe w danym teście.</p>
   <div class="actions"><button class="sec" id="clrr">Wyczyść ranking</button></div>`):"")
+  +card(`<h2>🌍 Ranking globalny – top 10</h2><div id="glob"></div><p class="mute" style="font-size:12px">Wyniki wszystkich osób, które zagrały. Dla zabawy, bez weryfikacji.</p>`)
   +(h.length?card(`<h2>Poprzednie wyniki</h2><table><tr><th>Data</th><th>Pseudonim</th><th>Pkt / max</th><th>Wsk.</th><th>Popr.</th></tr>${h.map(r=>`<tr><td>${esc(String(r.date).split(",")[0])}</td><td class="nm">${esc(r.name||"–")}</td><td>${r.points!=null?r.points+" / "+r.max:"–"}</td><td>${r.index}</td><td>${Math.round(r.pct*100)}%</td></tr>`).join("")}</table>
   <div class="actions"><button class="sec" id="clr">Wyczyść historię</button></div>`):"");
   const inp=document.getElementById("name");
@@ -1116,6 +1117,7 @@ function home(){
     try{localStorage.setItem("nieoficjalny_test_nick",n)}catch(e){}
     start(n)};
   document.getElementById("go").onclick=go;inp.onkeydown=e=>{if(e.key==="Enter")go()};
+  gLoad();
   const cr=document.getElementById("clrr");if(cr)cr.onclick=()=>{if(confirm("Usunąć cały ranking z tego urządzenia?")){localStorage.removeItem(RKEY);home()}};
   const c=document.getElementById("clr");if(c)c.onclick=()=>{if(confirm("Usunąć zapisane wyniki z tego urządzenia?")){localStorage.removeItem(KEY);home()}};
   window.scrollTo(0,0);
@@ -1123,6 +1125,27 @@ function home(){
 
 
 
+
+/* ===== Ranking globalny (Supabase, tylko odczyt top 10 i dopisanie wyniku) ===== */
+const GL={url:"https://qpgbugwqlecjeukyfjmf.supabase.co",key:"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFwZ2J1Z3dxbGVjamV1a3lmam1mIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTExMDg4NzgsImV4cCI6MjEwNjY4NDg3OH0.JRG-3jTeO-HcKZze8S8wzuigLPzzN7nKsCOyAOvec9I"};
+const gReq=(path,opt)=>{const c=new AbortController(),t=setTimeout(()=>c.abort(),8000);
+  return fetch(GL.url+"/rest/v1/"+path,Object.assign({signal:c.signal,headers:Object.assign({apikey:GL.key,Authorization:"Bearer "+GL.key,"Content-Type":"application/json"},(opt&&opt.headers)||{})},opt&&{method:opt.method,body:opt.body})).finally(()=>clearTimeout(t))};
+const gTop=()=>gReq("scores?select=name,points,max_points,created_at&order=points.desc,created_at.asc&limit=10").then(r=>{if(!r.ok)throw new Error("http "+r.status);return r.json()});
+const gSend=e=>gReq("scores",{method:"POST",headers:{Prefer:"return=minimal"},body:JSON.stringify({name:e.name,points:e.points,max_points:e.max,idx:e.index})}).then(r=>{if(!r.ok)throw new Error("http "+r.status)});
+const gCount=q=>gReq("scores?select=id"+(q||""),{headers:{Prefer:"count=exact",Range:"0-0"}}).then(r=>{const m=(r.headers.get("content-range")||"").match(/\/(\d+)$/);if(!r.ok&&r.status!==206)throw new Error("http "+r.status);return m?+m[1]:0});
+const gShow=(el,rows,mine)=>{
+  if(!rows.length){el.innerHTML='<p class="mute">Na razie nikt nie ma wyniku. Bądź pierwszy!</p>';return}
+  let hl=-1;if(mine)hl=rows.findIndex(r=>r.name===mine.name&&r.points===mine.points);
+  el.innerHTML=rankTable(rows.map((r,i)=>({id:i===hl?"me":"g"+i,name:r.name,points:r.points,max:r.max_points,date:new Date(r.created_at).toLocaleDateString("pl-PL")})),"me");
+};
+function gLoad(mine){
+  const el=document.getElementById("glob");if(!el)return;
+  el.innerHTML='<p class="mute">Ładowanie rankingu globalnego…</p>';
+  const go=()=>gTop().then(rows=>{if(document.getElementById("glob")!==el)return;gShow(el,rows,mine);
+    if(mine){Promise.all([gCount("&points=gt."+mine.points),gCount("")]).then(a=>{const p=document.getElementById("gplace");if(p)p.innerHTML="Twoje miejsce na świecie: <b>"+(a[0]+1)+"</b> z "+a[1]}).catch(()=>{})}})
+    .catch(()=>{if(document.getElementById("glob")===el)el.innerHTML='<p class="mute">Nie udało się pobrać rankingu globalnego (brak internetu?). Wynik jest zapisany lokalnie.</p>'});
+  if(mine)gSend(mine).then(go,go);else go();
+}
 /* ===== Dźwięk (Web Audio, bez plików zewnętrznych) ===== */
 const AU=(function(){
   let ctx=null,master=null,timer=null,bar=0,nextT=0,playing=false,fanfared=false;
@@ -1397,12 +1420,16 @@ function finish(){
     ${SEP}
     <h3>🏆 Ranking – top 10</h3>${rankTable(all.slice(0,10),entry.id)}${place>10?`<p class="mute">Twój wynik jest na miejscu ${place} – poza pierwszą dziesiątką.</p>`:""}
     ${SEP}
+    <h3>🌍 Ranking globalny – top 10</h3><p class="mute" id="gplace"></p><div id="glob"></div>
+    <p class="mute" style="font-size:12px">Ranking globalny jest dla zabawy – wyniki wysyłane są anonimowo (pseudonim i punkty), bez weryfikacji.</p>
+    ${SEP}
     <h3>Profil w obszarach</h3>
     ${Object.keys(CATS).map(k=>{const p=Math.round(r.cats[k]*100),[a,b]=cp(k);return `<div class="row" style="--c:${CATS[k].color}"><div class="lab">${CATS[k].ico} ${CATS[k].name}</div><div class="val">${a} / ${b} pkt · ${p}%</div><div class="bar"><i style="width:${p}%"></i></div></div>`}).join("")}
     <h3>Notatka opisowa</h3><div class="note">${note(r)}</div>
     <div class="warn"><b>Zastrzeżenie:</b> Nieoficjalne narzędzie edukacyjne. Wynik nie jest wynikiem testu IQ, nie stanowi diagnozy medycznej ani psychologicznej i nie powinien być podstawą decyzji dotyczących zdrowia, edukacji lub pracy. W razie wątpliwości skonsultuj się z psychologiem lub lekarzem. Wynik i ranking zapisano lokalnie na tym urządzeniu.</div>
     <div class="actions noprint"><button id="again">Wróć do początku</button><button class="sec" id="prt">Drukuj / zapisz jako PDF</button><button class="sec" id="exp">Pobierz wynik (JSON)</button></div>`,"result");
   document.getElementById("again").onclick=home;
+  gLoad({name:S.name,points,max,index});
   document.getElementById("prt").onclick=()=>window.print();
   document.getElementById("exp").onclick=()=>{const b=new Blob([JSON.stringify({app:"Retro IQ Test",date:r.date,name:r.name,points,max,place,index,pct,cats:r.cats,pytania:res.map(x=>x.id)},null,2)],{type:"application/json"});const a=document.createElement("a");a.href=URL.createObjectURL(b);a.download="retro-iq-test-wynik.json";a.click()};
   window.scrollTo(0,0);

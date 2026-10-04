@@ -1104,7 +1104,7 @@ function home(){
     <input type="text" id="name" maxlength="20" placeholder="np. Anna" value="${esc(localStorage.getItem("nieoficjalny_test_nick")||"")}">
     <div id="nerr" class="nerr"></div>
     <div class="actions"><button id="go">Rozpocznij test ✦</button></div>
-    <div class="warn"><b>Ważne:</b> To narzędzie edukacyjne, a nie standaryzowany test IQ ani badanie psychologiczne. Wynik jest orientacyjny i nie stanowi diagnozy medycznej ani psychologicznej. Wyniki zapisują się wyłącznie w przeglądarce na tym urządzeniu.</div>`,"home")
+    <div class="warn"><b>Ważne:</b> To narzędzie edukacyjne, a nie standaryzowany test IQ ani badanie psychologiczne. Wynik jest orientacyjny i nie stanowi diagnozy medycznej ani psychologicznej. Historia zapisuje się w przeglądarce na tym urządzeniu, a pseudonim i punkty trafiają anonimowo do rankingu globalnego.</div>`,"home")
   +(rk.length?card(`<h2>🏆 Ranking – top 10</h2>${rankTable(rk.slice(0,10))}
   <p class="mute">Ranking jest sortowany po liczbie zdobytych punktów; obok widać maksimum możliwe w danym teście.</p>
   <div class="actions"><button class="sec" id="clrr">Wyczyść ranking</button></div>`):"")
@@ -1229,7 +1229,7 @@ function splash(){
   <input type="text" id="name" maxlength="20" placeholder="np. Anna" autocomplete="off" autocapitalize="words" enterkeyhint="go" value="${esc(localStorage.getItem("nieoficjalny_test_nick")||"")}">
   <div id="nerr" class="nerr"></div><button id="go">Start</button></div>
   <button class="lnk" id="info">Zasady, ranking i historia</button>
-  <div class="spn">Test nie jest standaryzowanym testem IQ ani diagnozą. Wyniki zapisują się tylko na tym urządzeniu.</div></div>`;
+  <div class="spn">Test nie jest standaryzowanym testem IQ ani diagnozą. Wynik i pseudonim zapisują się na tym urządzeniu oraz trafiają anonimowo do rankingu globalnego.</div></div>`;
   const inp=document.getElementById("name");
   const go=()=>{const n=inp.value.trim().replace(/\s+/g," ");
     if(n.length<2){document.getElementById("nerr").textContent="Podaj pseudonim (min. 2 znaki), pod którym pojawisz się w rankingu.";inp.focus();return}
@@ -1426,7 +1426,7 @@ function finish(){
     <h3>Profil w obszarach</h3>
     ${Object.keys(CATS).map(k=>{const p=Math.round(r.cats[k]*100),[a,b]=cp(k);return `<div class="row" style="--c:${CATS[k].color}"><div class="lab">${CATS[k].ico} ${CATS[k].name}</div><div class="val">${a} / ${b} pkt · ${p}%</div><div class="bar"><i style="width:${p}%"></i></div></div>`}).join("")}
     <h3>Notatka opisowa</h3><div class="note">${note(r)}</div>
-    <div class="warn"><b>Zastrzeżenie:</b> Nieoficjalne narzędzie edukacyjne. Wynik nie jest wynikiem testu IQ, nie stanowi diagnozy medycznej ani psychologicznej i nie powinien być podstawą decyzji dotyczących zdrowia, edukacji lub pracy. W razie wątpliwości skonsultuj się z psychologiem lub lekarzem. Wynik i ranking zapisano lokalnie na tym urządzeniu.</div>
+    <div class="warn"><b>Zastrzeżenie:</b> Nieoficjalne narzędzie edukacyjne. Wynik nie jest wynikiem testu IQ, nie stanowi diagnozy medycznej ani psychologicznej i nie powinien być podstawą decyzji dotyczących zdrowia, edukacji lub pracy. W razie wątpliwości skonsultuj się z psychologiem lub lekarzem. Historia i ranking lokalny są zapisane na tym urządzeniu; pseudonim i punkty trafiły też anonimowo do rankingu globalnego.</div>
     <div class="actions noprint"><button id="again">Wróć do początku</button><button class="sec" id="prt">Drukuj / zapisz jako PDF</button><button class="sec" id="exp">Pobierz wynik (JSON)</button></div>`,"result");
   document.getElementById("again").onclick=home;
   gLoad({name:S.name,points,max,index});
